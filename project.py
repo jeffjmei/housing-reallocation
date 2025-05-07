@@ -104,6 +104,21 @@ def find_paths_of_length_k(A, D_prime, start, end, k):
     dfs([start], {start}, 0)
     return result if result else None
 
+def masked_distance_matrix(D_prime, s):
+    """
+    Returns a modified copy of D_prime where only row s, column s,
+    and entries equal to 1 are retained. All other entries set to ∞.
+    """
+    n = len(D_prime)
+    D_masked = np.full((n, n), float('inf'))
+
+    for i in range(n):
+        for j in range(n):
+            if i == s or j == s or D_prime[i][j] == 1:
+                D_masked[i][j] = D_prime[i][j]
+
+    return D_masked
+
 def get_bottleneck_demand(path, A):
     """
     Given a path as a list of node indices and matrix A,
@@ -130,19 +145,6 @@ def adjust_circuit_flow(A, path, demand):
 
 # Run Program
 A = [
-    [float('inf'), 6, float('inf'), 7, float('inf'), 3, float('inf'), 6, 5, float('inf')],
-    [float('inf'), float('inf'), float('inf'), 3, 17, 12, float('inf'), float('inf'), 9, 7],
-    [8, 4, float('inf'), float('inf'), float('inf'), 8, 10, float('inf'), float('inf'), 5],
-    [float('inf'), float('inf'), 8, float('inf'), 3, float('inf'), 7, float('inf'), float('inf'), float('inf')],
-    [6, float('inf'), 4, float('inf'), float('inf'), 10, 6, 5, 10, float('inf')],
-    [float('inf'), 22, float('inf'), 8, float('inf'), float('inf'), 3, 4, 6, float('inf')],
-    [6, 7, 13, float('inf'), float('inf'), float('inf'), float('inf'), float('inf'), 8, float('inf')],
-    [float('inf'), 9, 5, float('inf'), float('inf'), 6, float('inf'), 11, 6, float('inf')],
-    [float('inf'), float('inf'), 5, float('inf'), 16, float('inf'), 19, float('inf'), float('inf'), 4],
-    [7, float('inf'), float('inf'), 5, 4, float('inf'), float('inf'), float('inf'), float('inf'), float('inf')]
-]
-
-A = [
     [0, 6, 0, 7, 0, 3, 0, 6, 5, 0],
     [0, 0, 0, 3, 17, 12, 0, 0, 9, 7],
     [8, 4, 0, 0, 0, 8, 10, 0, 0, 5],
@@ -161,20 +163,19 @@ D_prime, _ = floyd_warshall(D)
 D_prime = cycle_diagonals(D_prime, A)
 
 # Find Shortest path
-t = 1
 s = 0
 path_len = int(D_prime[s][s])
-path = [s] + find_paths_of_length_k(A, D_prime, t, s, path_len - 1)
+D_prime_masked = masked_distance_matrix(D_prime, s)
+for t in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+    path = find_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
+    if path is None:
+        continue         
+    else: 
+        path = [s] + path
 
-# find bottleneck demand and adjust flow
-demand = get_bottleneck_demand(path, A)
-adjust_circuit_flow(A, path, demand)
-
-# sanity check
-A[0][1] == 0
-A[4][0] == 0
-A[1][4] == 11
-D_prime[0][1] == float('inf')
-D_prime[4][0] == float('inf')
-D_prime[1][4]
+    # find bottleneck demand and adjust flow
+    demand = get_bottleneck_demand(path, A)
+    adjust_circuit_flow(A, path, demand)
+    if demand > 0: 
+        print(f"Path: {path}; {demand} Sets")
 
