@@ -71,39 +71,6 @@ def cycle_diagonals(D_prime, A):
         D_cycle[i][i] = min_cycle_len
     return D_cycle
 
-# Identify Circuits
-def find_paths_of_length_k(A, D_prime, start, end, k):
-    """
-    Find the first path from `start` to `end` of exact length k using arcs where A[i][j] > 0.
-    Stops at the first valid path.
-
-    Returns:
-        A list of node indices representing the path, or None if not found.
-    """
-    n = len(A)
-    result = []
-
-    def dfs(path, visited, length_so_far):
-        nonlocal result
-        if result:  # early exit if path already found
-            return
-
-        u = path[-1]
-        if u == end and length_so_far == k:
-            result = path[:]
-            return
-
-        for v in range(n):
-            if A[u][v] > 0 and (v not in visited or v == end):
-                path.append(v)
-                visited.add(v)
-                dfs(path, visited, length_so_far + 1)
-                path.pop()
-                visited.discard(v)
-
-    dfs([start], {start}, 0)
-    return result if result else None
-
 def find_all_paths_of_length_k(A, D_prime, start, end, k):
     """
     Find all paths from `start` to `end` of exact length k using arcs where A[i][j] > 0.
@@ -173,6 +140,21 @@ def adjust_circuit_flow(A, path, demand):
         if A[i][j] == 0:
              D_prime[i][j] = float('inf')
 
+def extract_circuits_length_k(A, D_prime_masked, s, k):
+    for t in range(len(A)):
+        paths = find_all_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
+        for path in paths: 
+            if path is None:
+                continue         
+            else: 
+                path = [s] + path
+
+            # find bottleneck demand and adjust flow
+            demand = get_bottleneck_demand(path, A)
+            adjust_circuit_flow(A, path, demand)
+            if demand > 0: 
+                print(f"Path: {path}; {demand} Sets")
+
 
 # Run Program
 A = [
@@ -197,18 +179,5 @@ D_prime = cycle_diagonals(D_prime, A)
 s = 0
 path_len = int(D_prime[s][s])
 D_prime_masked = masked_distance_matrix(D_prime, s)
-for t in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-    #path = find_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
-    paths = find_all_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
-    for path in paths: 
-        if path is None:
-            continue         
-        else: 
-            path = [s] + path
-
-        # find bottleneck demand and adjust flow
-        demand = get_bottleneck_demand(path, A)
-        adjust_circuit_flow(A, path, demand)
-        if demand > 0: 
-            print(f"Path: {path}; {demand} Sets")
+extract_circuits_length_k(A, D_prime_masked, s, path_len - 1)
 
