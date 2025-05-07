@@ -104,6 +104,15 @@ def find_paths_of_length_k(A, D_prime, start, end, k):
     dfs([start], {start}, 0)
     return result if result else None
 
+def get_bottleneck_demand(path, A):
+    """
+    Given a path as a list of node indices and matrix A,
+    return the minimum A[i][j] along the path.
+    Assumes path is a cycle or path: [i0, i1, ..., in]
+    so arcs are (i0→i1), (i1→i2), ..., (in-1→in)
+    """
+    return min(A[i][j] for i, j in zip(path[:-1], path[1:]))
+
 # Run Program
 A = [
     [float('inf'), 6, float('inf'), 7, float('inf'), 3, float('inf'), 6, 5, float('inf')],
@@ -139,6 +148,10 @@ D_prime = cycle_diagonals(D_prime, A)
 # Find Shortest path
 t = 1
 s = 0
-k = int(D_prime[s][s])
-paths_t_to_s = find_paths_of_length_k(A, D_prime, t, s, k - 1)
+path_len = int(D_prime[s][s])
+path = [s] + find_paths_of_length_k(A, D_prime, t, s, path_len - 1)
 
+# Update Demand
+# find minimum
+
+get_bottleneck_demand(path, A)
