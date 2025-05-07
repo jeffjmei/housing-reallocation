@@ -170,14 +170,25 @@ A = [
     [7, 0, 0, 5, 4, 0, 0, 0, 0, 0]
 ]
 
-# Derive Initial Distance Matrix
+ct = 0
 D = initial_distance_matrix(A)
 D_prime, _ = floyd_warshall(D)
 D_prime = cycle_diagonals(D_prime, A)
+while np.any((diag != 0) & (np.diag(D_prime) != float('inf'))): 
+    ct += 1
+    print(ct)
 
-# Find Shortest path
-s = 0
-path_len = int(D_prime[s][s])
-D_prime_masked = masked_distance_matrix(D_prime, s)
-extract_circuits_length_k(A, D_prime_masked, s, path_len - 1)
+    # Find Shortest path
+    diag = np.diag(D_prime)
+    mask = (diag != 0) & (diag != float('inf'))  # elementwise logical AND
+    s = int(np.argmax(mask))
+    path_len = int(D_prime[s][s])
+    D_prime_masked = masked_distance_matrix(D_prime, s)
+    extract_circuits_length_k(A, D_prime_masked, s, path_len - 1)
+
+    # Derive Initial Distance Matrix
+    D = initial_distance_matrix(A)
+    D_prime, _ = floyd_warshall(D)
+    D_prime = cycle_diagonals(D_prime, A)
+
 
