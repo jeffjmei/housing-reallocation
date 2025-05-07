@@ -6,7 +6,10 @@ def floyd_warshall(distance_matrix):
     """
     n = len(distance_matrix)
     dist = np.array(distance_matrix, dtype=float)
-    next_node = [[None if dist[i][j] == float('inf') else j for j in range(n)] for i in range(n)]
+    next_node = [
+        [None if dist[i][j] == float('inf') else j 
+        for j in range(n)] for i in range(n)
+    ]
 
     for k in range(n): # node k is intermediate node
         for i in range(n):
@@ -46,123 +49,60 @@ def initial_distance_matrix(A):
             if A[i][j] > 0 and A[i][j] < float('inf'):
                 D[i][j] = 1
             # diagonal
-            if i == j:
-                D[i][j] = 0  
+            #if i == j:
+            #    D[i][j] = 0  
 
     return D
 
-def cycle_diagonals(D_prime):
+def cycle_diagonals(D_prime, A):
     """
-    Adjusts the diagonal entries of D_prime to represent shortest cycle lengths.
-    This function should be run AFTER Floyd-Warshall.
-
-    Parameters:
-    D_prime: np.array (n x n), result of Floyd-Warshall
-    
-    Returns:
-    D_cycle: np.array (n x n), with adjusted diagonals
+    Adjusts the diagonal entries of D_prime to reflect shortest cycle lengths,
+    by checking only arcs (i → j) that actually exist in A.
     """
     n = len(D_prime)
     D_cycle = D_prime.copy()
     for i in range(n):
         min_cycle_len = float('inf')
         for j in range(n):
-            if i != j and D_prime[i][j] < float('inf') and D_prime[j][i] < float('inf'):
-                cycle_len = D_prime[i][j] + D_prime[j][i]
+            if i != j and A[i][j] > 0 and D_prime[j][i] < float('inf'):
+                cycle_len = 1 + D_prime[j][i]
                 if cycle_len < min_cycle_len:
                     min_cycle_len = cycle_len
         D_cycle[i][i] = min_cycle_len
     return D_cycle
 
-def find_all_cycles_of_length_k(s, A, k, next_node):
+# Identify Circuits
+def find_paths_of_length_k(A, D_prime, start, end, k):
     """
-    Find all simple cycles of length k starting and ending at s,
-    using only arcs with A[i][j] > 0.
-
-    Parameters:
-    - s: starting node
-    - A: 2D numpy array
-    - k: target cycle length
-    - next_node: Floyd-Warshall next-hop matrix
+    Find the first path from `start` to `end` of exact length k using arcs where A[i][j] > 0.
+    Stops at the first valid path.
 
     Returns:
-    - List of cycles (each a list of nodes starting and ending at s)
+        A list of node indices representing the path, or None if not found.
     """
     n = len(A)
-    paths = []
+    result = []
 
-    def dfs(path, visited):
-        current = path[-1]
-
-        # Termination
-        if len(path) == k:
-            if A[current][s] > 0:
-                paths.append(path + [s])
+    def dfs(path, visited, length_so_far):
+        nonlocal result
+        if result:  # early exit if path already found
             return
 
-        for neighbor in range(n):
-            if A[current][neighbor] > 0 and neighbor not in visited:
-                dfs(path + [neighbor], visited | {neighbor})
+        u = path[-1]
+        if u == end and length_so_far == k:
+            result = path[:]
+            return
 
-    dfs([s], {s})
-    return paths
+        for v in range(n):
+            if A[u][v] > 0 and (v not in visited or v == end):
+                path.append(v)
+                visited.add(v)
+                dfs(path, visited, length_so_far + 1)
+                path.pop()
+                visited.discard(v)
 
-def reallocate_from_node(A, s, max_cycle_length=None):
-    """
-    Perform Wright-style cycle-based reallocation from node s:
-    - Start from D'[s,s]
-    - At each length k, find all cycles of length k from s
-    - Apply max flow through all such cycles
-    - Repeat until no more cycles can be found
-
-    Parameters:
-    - A: 2D numpy array (will be modified in-place)
-    - s: int, starting node
-    - max_cycle_length: optional int, upper limit on cycle length
-
-    Returns:
-    - List of (circuit, flow) tuples executed
-    """
-    n = len(A)
-    executed = []
-
-    while True:
-        # Rebuild D and D' each round
-        D = initial_distance_matrix(A)
-        D_prime, next_node = floyd_warshall(D)
-        D_prime = cycle_diagonals(D_prime)
-
-        cycle_len = int(D_prime[s][s])
-        if cycle_len == float('inf'):
-            break
-
-        if max_cycle_length is not None and cycle_len > max_cycle_length:
-            break
-
-        # Find all cycles of length cycle_len from s
-        cycles = find_all_cycles_of_length_k(s, A, cycle_len, next_node)
-        if not cycles:
-            break  # No more cycles of this length
-
-        for circuit in cycles:
-            edges = [(circuit[i], circuit[i + 1]) for i in range(len(circuit) - 1)]
-            m = min(A[i][j] for i, j in edges)
-            if m == 0:
-                continue
-            for i, j in edges:
-                A[i][j] -= m
-            executed.append((circuit, m))
-
-    return executed
-
-all_executed = []
-for s in range(len(A)):
-    executed = reallocate_from_node(A, s)
-    all_executed.extend(executed)
-
-for path, flow in all_executed:
-    print(f"Moved {flow} families through: {path}")
-
+    dfs([start], {start}, 0)
+    return result if result else None
 
 # Run Program
 A = [
@@ -178,17 +118,27 @@ A = [
     [7, float('inf'), float('inf'), 5, 4, float('inf'), float('inf'), float('inf'), float('inf'), float('inf')]
 ]
 
+A = [
+    [0, 6, 0, 7, 0, 3, 0, 6, 5, 0],
+    [0, 0, 0, 3, 17, 12, 0, 0, 9, 7],
+    [8, 4, 0, 0, 0, 8, 10, 0, 0, 5],
+    [0, 0, 8, 0, 3, 0, 7, 0, 0, 0],
+    [6, 0, 4, 0, 0, 10, 6, 5, 10, 0],
+    [0, 22, 0, 8, 0, 0, 3, 4, 6, 0],
+    [6, 7, 13, 0, 0, 0, 0, 0, 8, 0],
+    [0, 9, 5, 0, 0, 6, 0, 11, 6, 0],
+    [0, 0, 5, 0, 16, 0, 19, 0, 0, 4],
+    [7, 0, 0, 5, 4, 0, 0, 0, 0, 0]
+]
+
 # Derive Initial Distance Matrix
 D = initial_distance_matrix(A)
 D_prime, _ = floyd_warshall(D)
-D_prime = cycle_diagonals(D_prime)
+D_prime = cycle_diagonals(D_prime, A)
 
-# Identify Circuits
-D_prime
-
-def identify_circuit(D_prime, node):
-    min_dist = D_prime[node,node]
-    # find adjacent node
-    adjacent_nodes = D_prime
-
+# Find Shortest path
+t = 1
+s = 0
+k = int(D_prime[s][s])
+paths_t_to_s = find_paths_of_length_k(A, D_prime, t, s, k - 1)
 
