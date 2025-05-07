@@ -166,16 +166,16 @@ for path, flow in all_executed:
 
 # Run Program
 A = [
-    [float('inf'), 6, float('inf'), 7, float('inf'), 3, float('inf'), 6, 5, 0],
+    [float('inf'), 6, float('inf'), 7, float('inf'), 3, float('inf'), 6, 5, float('inf')],
     [float('inf'), float('inf'), float('inf'), 3, 17, 12, float('inf'), float('inf'), 9, 7],
     [8, 4, float('inf'), float('inf'), float('inf'), 8, 10, float('inf'), float('inf'), 5],
-    [float('inf'), float('inf'), 8, float('inf'), 3, float('inf'), 7, float('inf'), float('inf'), 0],
-    [6, float('inf'), 4, float('inf'), float('inf'), 10, 6, 5, 10, 0],
-    [float('inf'), 22, float('inf'), 8, float('inf'), float('inf'), 3, 4, 6, 0],
-    [6, 7, 13, float('inf'), float('inf'), float('inf'), float('inf'), float('inf'), 8, 0],
-    [float('inf'), 9, 5, float('inf'), float('inf'), 6, float('inf'), 11, 6, 0],
+    [float('inf'), float('inf'), 8, float('inf'), 3, float('inf'), 7, float('inf'), float('inf'), float('inf')],
+    [6, float('inf'), 4, float('inf'), float('inf'), 10, 6, 5, 10, float('inf')],
+    [float('inf'), 22, float('inf'), 8, float('inf'), float('inf'), 3, 4, 6, float('inf')],
+    [6, 7, 13, float('inf'), float('inf'), float('inf'), float('inf'), float('inf'), 8, float('inf')],
+    [float('inf'), 9, 5, float('inf'), float('inf'), 6, float('inf'), 11, 6, float('inf')],
     [float('inf'), float('inf'), 5, float('inf'), 16, float('inf'), 19, float('inf'), float('inf'), 4],
-    [7, float('inf'), float('inf'), 5, 4, float('inf'), float('inf'), float('inf'), float('inf'), 0]
+    [7, float('inf'), float('inf'), 5, 4, float('inf'), float('inf'), float('inf'), float('inf'), float('inf')]
 ]
 
 # Derive Initial Distance Matrix
