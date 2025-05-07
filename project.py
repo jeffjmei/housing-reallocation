@@ -104,6 +104,37 @@ def find_paths_of_length_k(A, D_prime, start, end, k):
     dfs([start], {start}, 0)
     return result if result else None
 
+def find_all_paths_of_length_k(A, D_prime, start, end, k):
+    """
+    Find all paths from `start` to `end` of exact length k using arcs where A[i][j] > 0.
+
+    Returns:
+        A list of paths, where each path is a list of node indices.
+    """
+    n = len(A)
+    results = []
+
+    def dfs(path, visited, length_so_far):
+        u = path[-1]
+
+        if u == end and length_so_far == k:
+            results.append(path[:])
+            return
+
+        if length_so_far >= k:
+            return  # avoid overstepping
+
+        for v in range(n):
+            if A[u][v] > 0 and (v not in visited or v == end):
+                path.append(v)
+                visited.add(v)
+                dfs(path, visited, length_so_far + 1)
+                path.pop()
+                visited.discard(v)
+
+    dfs([start], {start}, 0)
+    return results
+
 def masked_distance_matrix(D_prime, s):
     """
     Returns a modified copy of D_prime where only row s, column s,
@@ -167,15 +198,17 @@ s = 0
 path_len = int(D_prime[s][s])
 D_prime_masked = masked_distance_matrix(D_prime, s)
 for t in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-    path = find_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
-    if path is None:
-        continue         
-    else: 
-        path = [s] + path
+    #path = find_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
+    paths = find_all_paths_of_length_k(A, D_prime_masked, t, s, path_len - 1)
+    for path in paths: 
+        if path is None:
+            continue         
+        else: 
+            path = [s] + path
 
-    # find bottleneck demand and adjust flow
-    demand = get_bottleneck_demand(path, A)
-    adjust_circuit_flow(A, path, demand)
-    if demand > 0: 
-        print(f"Path: {path}; {demand} Sets")
+        # find bottleneck demand and adjust flow
+        demand = get_bottleneck_demand(path, A)
+        adjust_circuit_flow(A, path, demand)
+        if demand > 0: 
+            print(f"Path: {path}; {demand} Sets")
 
