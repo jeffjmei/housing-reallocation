@@ -113,6 +113,21 @@ def get_bottleneck_demand(path, A):
     """
     return min(A[i][j] for i, j in zip(path[:-1], path[1:]))
 
+def adjust_circuit_flow(A, path, demand):
+    """
+    Subtracts `bottleneck` from each arc along the given path in A.
+
+    Parameters:
+    - A: numpy 2D array (updated in-place)
+    - path: list of node indices, e.g., [0, 1, 4, 0]
+    - bottleneck: scalar to subtract along each arc
+    """
+    for i, j in zip(path[:-1], path[1:]):
+        A[i][j] -= demand
+        if A[i][j] == 0:
+             D_prime[i][j] = float('inf')
+
+
 # Run Program
 A = [
     [float('inf'), 6, float('inf'), 7, float('inf'), 3, float('inf'), 6, 5, float('inf')],
@@ -151,7 +166,15 @@ s = 0
 path_len = int(D_prime[s][s])
 path = [s] + find_paths_of_length_k(A, D_prime, t, s, path_len - 1)
 
-# Update Demand
-# find minimum
+# find bottleneck demand and adjust flow
+demand = get_bottleneck_demand(path, A)
+adjust_circuit_flow(A, path, demand)
 
-get_bottleneck_demand(path, A)
+# sanity check
+A[0][1] == 0
+A[4][0] == 0
+A[1][4] == 11
+D_prime[0][1] == float('inf')
+D_prime[4][0] == float('inf')
+D_prime[1][4]
+
