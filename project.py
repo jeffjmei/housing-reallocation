@@ -20,21 +20,6 @@ def floyd_warshall(distance_matrix):
 
     return dist, next_node
 
-def reconstruct_path(u, v, next_node):
-    """
-    DESCRIPTION: reconstructs path from floyd-warshall output
-    """
-    if next_node[u][v] is None:
-        return []
-
-    path = [u]
-    while u != v:
-        u = next_node[u][v]
-        if u is None:
-            return []  # No path
-        path.append(u)
-    return path
-
 def initial_distance_matrix(A):
     """
     DESCRIPTION: finds shortest number of moves between 
@@ -48,16 +33,13 @@ def initial_distance_matrix(A):
             # non-empty
             if A[i][j] > 0 and A[i][j] < float('inf'):
                 D[i][j] = 1
-            # diagonal
-            #if i == j:
-            #    D[i][j] = 0  
 
     return D
 
 def cycle_diagonals(D_prime, A):
     """
     Adjusts the diagonal entries of D_prime to reflect shortest cycle lengths,
-    by checking only arcs (i → j) that actually exist in A.
+    by checking only arcs (i - j) that actually exist in A.
     """
     n = len(D_prime)
     D_cycle = D_prime.copy()
@@ -73,10 +55,7 @@ def cycle_diagonals(D_prime, A):
 
 def find_all_paths_of_length_k(A, D_prime, start, end, k):
     """
-    Find all paths from `start` to `end` of exact length k using arcs where A[i][j] > 0.
-
-    Returns:
-        A list of paths, where each path is a list of node indices.
+    Finds all k-length circuits
     """
     n = len(A)
     results = []
@@ -104,8 +83,7 @@ def find_all_paths_of_length_k(A, D_prime, start, end, k):
 
 def masked_distance_matrix(D_prime, s):
     """
-    Returns a modified copy of D_prime where only row s, column s,
-    and entries equal to 1 are retained. All other entries set to ∞.
+    Used to hide D_prime so only the sth row and col can be seen
     """
     n = len(D_prime)
     D_masked = np.full((n, n), float('inf'))
@@ -119,21 +97,13 @@ def masked_distance_matrix(D_prime, s):
 
 def get_bottleneck_demand(path, A):
     """
-    Given a path as a list of node indices and matrix A,
-    return the minimum A[i][j] along the path.
-    Assumes path is a cycle or path: [i0, i1, ..., in]
-    so arcs are (i0→i1), (i1→i2), ..., (in-1→in)
+    Finds the maximum number of tenants we can shuffle on an arc
     """
     return min(A[i][j] for i, j in zip(path[:-1], path[1:]))
 
 def adjust_circuit_flow(A, path, demand):
     """
-    Subtracts `bottleneck` from each arc along the given path in A.
-
-    Parameters:
-    - A: numpy 2D array (updated in-place)
-    - path: list of node indices, e.g., [0, 1, 4, 0]
-    - bottleneck: scalar to subtract along each arc
+    Shuffles tenants and readjusts demand 
     """
     for i, j in zip(path[:-1], path[1:]):
         A[i][j] -= demand
@@ -170,23 +140,21 @@ A = [
     [7, 0, 0, 5, 4, 0, 0, 0, 0, 0]
 ]
 
-ct = 0
 D = initial_distance_matrix(A)
 D_prime, _ = floyd_warshall(D)
 D_prime = cycle_diagonals(D_prime, A)
 while np.any((diag != 0) & (np.diag(D_prime) != float('inf'))): 
-    ct += 1
     print(ct)
 
     # Find Shortest path
     diag = np.diag(D_prime)
-    mask = (diag != 0) & (diag != float('inf'))  # elementwise logical AND
+    mask = (diag != 0) & (diag != float('inf'))  
     s = int(np.argmax(mask))
     path_len = int(D_prime[s][s])
     D_prime_masked = masked_distance_matrix(D_prime, s)
     extract_circuits_length_k(A, D_prime_masked, s, path_len - 1)
 
-    # Derive Initial Distance Matrix
+    # Update Distance Matrix
     D = initial_distance_matrix(A)
     D_prime, _ = floyd_warshall(D)
     D_prime = cycle_diagonals(D_prime, A)
